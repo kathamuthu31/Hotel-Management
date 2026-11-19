@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hotel Manager</title>
+<meta name="description" content="Browse, add, edit and manage hotels." />
+<meta property="og:title" content="Hotel Manager" />
+<meta property="og:description" content="Browse, add, edit and manage hotels." />
+<meta property="og:image" content="" />
+<style>
+:root{--primary:#2563eb;--primary-d:#1d4ed8;--danger:#dc2626;--bg:#f3f4f6;--card:#fff;--text:#111827;--muted:#6b7280;--border:#e5e7eb;--radius:14px;--shadow:0 4px 14px rgba(0,0,0,.08)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+a{color:inherit;text-decoration:none}
+header.app-header{background:var(--card);box-shadow:0 1px 6px rgba(0,0,0,.07);position:sticky;top:0;z-index:10}
+.container{max-width:1150px;margin:0 auto;padding:0 16px}
+.nav{display:flex;align-items:center;justify-content:space-between;height:64px;gap:12px}
+.brand{font-weight:800;font-size:1.25rem;color:var(--primary)}
+main{padding:24px 0 48px}
+h1{font-size:1.6rem;margin-bottom:16px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:10px;padding:10px 16px;font-size:.95rem;font-weight:600;cursor:pointer;background:var(--primary);color:#fff;transition:.15s}
+.btn:hover{background:var(--primary-d)}
+.btn.secondary{background:#e5e7eb;color:var(--text)}
+.btn.secondary:hover{background:#d1d5db}
+.btn.danger{background:var(--danger)}
+.btn.danger:hover{background:#b91c1c}
+.btn.small{padding:7px 12px;font-size:.85rem}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* Filters */
+.filters{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:12px;align-items:end;margin-bottom:20px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:.85rem;font-weight:600;color:var(--muted)}
+input[type=text],input[type=number],textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font:inherit;background:#fff}
+input:focus,textarea:focus{outline:2px solid #93c5fd;border-color:var(--primary)}
+textarea{resize:vertical;min-height:110px}
+.result-info{color:var(--muted);margin-bottom:12px;font-size:.9rem}
+
+/* Cards */
+.list{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;transition:transform .15s}
+.card:hover{transform:translateY(-3px)}
+.card-link{display:block;flex:1}
+.card img{width:100%;height:180px;object-fit:cover;display:block;background:#ddd}
+.card-body{padding:14px 16px}
+.card-title{font-size:1.1rem;font-weight:700}
+.card-price{color:var(--primary);font-weight:700;margin:2px 0 6px}
+.card-desc{color:var(--muted);font-size:.9rem}
+.card-actions{display:flex;gap:8px;padding:0 16px 16px}
+.empty{background:var(--card);border-radius:var(--radius);padding:40px;text-align:center;color:var(--muted)}
+
+/* Pagination */
+.pagination{display:flex;justify-content:center;flex-wrap:wrap;gap:6px;margin-top:26px}
+.pagination button{min-width:40px;height:40px;border:1px solid var(--border);background:#fff;border-radius:10px;cursor:pointer;font-weight:600}
+.pagination button.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.pagination button:disabled{opacity:.45;cursor:not-allowed}
+
+/* Form */
+.panel{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;max-width:760px;margin:0 auto}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-grid .full{grid-column:1/-1}
+.error{color:var(--danger);font-size:.82rem;min-height:1em}
+.invalid input,.invalid textarea{border-color:var(--danger)}
+.preview{margin-top:8px;width:100%;max-height:240px;object-fit:cover;border-radius:10px;display:none;border:1px solid var(--border)}
+.form-actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+
+/* Detail */
+.detail{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.detail img.hero{width:100%;max-height:420px;object-fit:cover;display:block}
+.detail-body{padding:24px}
+.detail-body h1{margin-bottom:4px}
+.detail-price{font-size:1.3rem;color:var(--primary);font-weight:800;margin-bottom:12px}
+.detail-desc{white-space:pre-wrap;margin-bottom:20px}
+.map-wrap{margin-top:12px;border-radius:12px;overflow:hidden;border:1px solid var(--border)}
+.map-wrap iframe{width:100%;height:340px;border:0;display:block}
+.meta-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0;color:var(--muted);font-size:.9rem}
+.detail-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+
+/* Modal / popup */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+.modal{background:#fff;border-radius:var(--radius);padding:24px;max-width:400px;width:100%;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.25);animation:pop .2s ease}
+.modal h3{margin-bottom:8px}
+.modal p{color:var(--muted);margin-bottom:18px}
+.modal .row{display:flex;gap:10px;justify-content:center}
+.tick{width:56px;height:56px;border-radius:50%;background:#dcfce7;color:#16a34a;display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 12px}
+@keyframes pop{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* Responsive */
+@media(max-width:900px){.list{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:1fr 1fr}.filters .field.search{grid-column:1/-1}}
+@media(max-width:560px){.list{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.filters{grid-template-columns:1fr}h1{font-size:1.35rem}.nav .btn span.txt{display:none}}
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="container nav">
+    <a href="#/" class="brand" aria-label="Hotel Manager home">🏨 Hotel Manager</a>
+    <a href="#/add" class="btn small">＋ <span class="txt">Add Hotel</span></a>
+  </div>
+</header>
+<main class="container" id="app" aria-live="polite"></main>
+<div id="popup-root"></div>
+
+<script>
+/* 
+   1. REDUX-STYLE STORE (single source of truth)
+   
+   */
+function createStore(reducer, preloaded) {
+  let state = preloaded;
+  const listeners = [];
+  return {
+    getState: () => state,
+    dispatch(action) { state = reducer(state, action); listeners.forEach(fn => fn(state, action)); },
+    subscribe(fn) { listeners.push(fn); }
+  };
+}
+
+/* Placeholder images (inline SVG so the app works offline) */
+function makeSeedImage(c1, c2, label) {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='800' height='500'>
+    <defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='${c1}'/><stop offset='1' stop-color='${c2}'/></linearGradient></defs>
+    <rect width='800' height='500' fill='url(#g)'/>
+    <text x='400' y='270' font-size='64' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'>${label}</text></svg>`;
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+
+const seedHotels = [
+  ["Sea Breeze Resort","Beachfront resort with a private beach, infinity pool, spa and seafood restaurant. Perfect for a relaxing family holiday.",12.9716,80.2707,4500,"#0ea5e9","#2563eb","Sea Breeze"],
+  ["Grand Palace Hotel","A luxury heritage-style hotel in the city centre featuring elegant rooms, a rooftop bar and a world-class buffet.",13.0827,80.2707,7800,"#9333ea","#db2777","Grand Palace"],
+  ["Hilltop Retreat","Cozy cottages surrounded by tea gardens with misty mornings, bonfire evenings and guided nature walks.",11.4102,76.6950,3200,"#16a34a","#0d9488","Hilltop"],
+  ["City Comfort Inn","Budget friendly hotel near the railway station with clean rooms, free Wi-Fi and complimentary breakfast.",13.0674,80.2376,1800,"#f59e0b","#ea580c","City Inn"],
+  ["Lakeview Residency","Calm lakeside stay with spacious balconies, boating facilities and an open-air dining deck.",9.9252,78.1198,3900,"#06b6d4","#4f46e5","Lakeview"],
+  ["Royal Orchid Suites","All-suite business hotel with a conference hall, gym, executive lounge and airport shuttle service.",12.9941,80.1709,6100,"#e11d48","#7c3aed","Orchid"],
+  ["Palm Grove Homestay","Traditional home-style stay in a coconut grove, authentic local meals and warm hospitality.",10.7905,78.7047,2100,"#65a30d","#15803d","Palm Grove"]
+].map((h, i) => ({
+  id: "seed" + (i + 1), title: h[0], description: h[1], latitude: h[2], longitude: h[3], price: h[4],
+  image: makeSeedImage(h[5], h[6], h[7])
+}));
+
+function loadHotels() {
+  try {
+    const raw = localStorage.getItem("hotels_v1");
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return seedHotels;
+}
+
+const initialState = {
+  hotels: loadHotels(),
+  filters: { search: "", minPrice: "", maxPrice: "" },
+  page: 1,
+  pageSize: 6,
+  popup: null            // { type:'success'|'confirm', message, id }
+};
+
+function reducer(state, action) {
+  switch (action.type) {
+    case "ADD_HOTEL":    return { ...state, hotels: [action.payload, ...state.hotels] };
+    case "UPDATE_HOTEL": return { ...state, hotels: state.hotels.map(h => h.id === action.payload.id ? action.payload : h) };
+    case "DELETE_HOTEL": return { ...state, hotels: state.hotels.filter(h => h.id !== action.id) };
+    case "SET_FILTERS":  return { ...state, filters: { ...state.filters, ...action.payload }, page: 1 };
+    case "RESET_FILTERS":return { ...state, filters: { search: "", minPrice: "", maxPrice: "" }, page: 1 };
+    case "SET_PAGE":     return { ...state, page: action.page };
+    case "SHOW_POPUP":   return { ...state, popup: action.payload };
+    case "HIDE_POPUP":   return { ...state, popup: null };
+    default: return state;
+  }
+}
+
+const store = createStore(reducer, initialState);
+store.subscribe(state => {            // persist hotels
+  try { localStorage.setItem("hotels_v1", JSON.stringify(state.hotels)); } catch (e) {
+    alert("Storage is full. Try using a smaller image.");
+  }
+});
+
+/* 
+   2. UTILITIES + SEO HEAD MANAGER (React-Helmet equivalent)
+   
+   */
+const $ = (sel, root = document) => root.querySelector(sel);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const money = n => "₹" + Number(n).toLocaleString("en-IN");
+const snippet = (t, n = 90) => t.length > n ? t.slice(0, n).trim() + "…" : t;
+const uid = () => "h" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+function Helmet({ title, description, image }) {
+  document.title = title;
+  const set = (selector, attr, value, create) => {
+    let el = $(selector);
+    if (!el) { el = document.createElement("meta"); create(el); document.head.appendChild(el); }
+    el.setAttribute(attr, value);
+  };
+  set('meta[name="description"]', "content", description, el => el.setAttribute("name", "description"));
+  set('meta[property="og:title"]', "content", title, el => el.setAttribute("property", "og:title"));
+  set('meta[property="og:description"]', "content", description, el => el.setAttribute("property", "og:description"));
+  set('meta[property="og:image"]', "content", image || "", el => el.setAttribute("property", "og:image"));
+}
+
+/* 
+   3. REUSABLE COMPONENTS
+
+ */
+function HotelCard(h) {
+  return `
+  <article class="card">
+    <a class="card-link" href="#/hotel/${h.id}" aria-label="View details of ${esc(h.title)}">
+      <img src="${h.image}" alt="${esc(h.title)} hotel photo" loading="lazy" />
+      <div class="card-body">
+        <h2 class="card-title">${esc(h.title)}</h2>
+        <div class="card-price">${money(h.price)} <small style="font-weight:400;color:var(--muted)">/ night</small></div>
+        <p class="card-desc">${esc(snippet(h.description))}</p>
+      </div>
+    </a>
+    <div class="card-actions">
+      <a class="btn small secondary" href="#/edit/${h.id}">✏️ Edit</a>
+      <button class="btn small danger" data-delete="${h.id}">🗑 Delete</button>
+    </div>
+  </article>`;
+}
+
+function Pagination(current, totalPages) {
+  if (totalPages <= 1) return "";
+  let btns = `<button data-page="${current - 1}" ${current === 1 ? "disabled" : ""} aria-label="Previous page">‹ Prev</button>`;
+  for (let p = 1; p <= totalPages; p++) {
+    btns += `<button data-page="${p}" class="${p === current ? "active" : ""}" aria-label="Page ${p}" ${p === current ? 'aria-current="page"' : ""}>${p}</button>`;
+  }
+  btns += `<button data-page="${current + 1}" ${current === totalPages ? "disabled" : ""} aria-label="Next page">Next ›</button>`;
+  return `<nav class="pagination" aria-label="Pagination">${btns}</nav>`;
+}
+
+/* Popups (confirm + success) */
+function renderPopup() {
+  const root = $("#popup-root");
+  const p = store.getState().popup;
+  if (!p) { root.innerHTML = ""; return; }
+  if (p.type === "confirm") {
+    root.innerHTML = `<div class="overlay" role="dialog" aria-modal="true"><div class="modal">
+      <h3>Delete hotel?</h3><p>${esc(p.message)}</p>
+      <div class="row"><button class="btn secondary" id="pp-cancel">Cancel</button><button class="btn danger" id="pp-ok">Yes, delete</button></div></div></div>`;
+    $("#pp-cancel").onclick = () => store.dispatch({ type: "HIDE_POPUP" });
+    $("#pp-ok").onclick = () => {
+      store.dispatch({ type: "DELETE_HOTEL", id: p.id });
+      store.dispatch({ type: "SHOW_POPUP", payload: { type: "success", message: "Hotel deleted successfully." } });
+      if (location.hash.startsWith("#/hotel/")) location.hash = "#/";
+    };
+  } else {
+    root.innerHTML = `<div class="overlay" role="alertdialog" aria-modal="true"><div class="modal">
+      <div class="tick">✓</div><h3>Success</h3><p>${esc(p.message)}</p>
+      <button class="btn" id="pp-close">OK</button></div></div>`;
+    $("#pp-close").onclick = () => store.dispatch({ type: "HIDE_POPUP" });
+  }
+}
+store.subscribe((s, a) => {
+  if (a.type === "SHOW_POPUP" || a.type === "HIDE_POPUP" || a.type === "DELETE_HOTEL") {
+    renderPopup();
+    if (a.type === "DELETE_HOTEL" && (location.hash === "" || location.hash === "#/")) updateResults();
+  }
+});
+
+/* 
+   4. HOTEL FORM (single component for Add + Edit)
+ */
+function HotelForm(hotel) {
+  const isEdit = !!hotel;
+  const h = hotel || { title: "", description: "", latitude: "", longitude: "", price: "", image: "" };
+  return `
+  <form id="hotel-form" class="panel" novalidate>
+    <h1>${isEdit ? "Edit Hotel" : "Add New Hotel"}</h1>
+    <div class="form-grid">
+      <div class="field full" data-field="image">
+        <label for="image">Hotel Image *</label>
+        <input type="file" id="image" accept="image/*" />
+        <img id="preview" class="preview" alt="Selected hotel image preview" ${h.image ? `src="${h.image}" style="display:block"` : ""} />
+        <span class="error"></span>
+      </div>
+      <div class="field full" data-field="title">
+        <label for="title">Title *</label>
+        <input type="text" id="title" value="${esc(h.title)}" placeholder="e.g. Sea Breeze Resort" />
+        <span class="error"></span>
+      </div>
+      <div class="field full" data-field="description">
+        <label for="description">Description *</label>
+        <textarea id="description" placeholder="Describe the hotel (min 10 characters)">${esc(h.description)}</textarea>
+        <span class="error"></span>
+      </div>
+      <div class="field" data-field="latitude">
+        <label for="latitude">Latitude *</label>
+        <input type="number" step="any" id="latitude" value="${h.latitude}" placeholder="-90 to 90" />
+        <span class="error"></span>
+      </div>
+      <div class="field" data-field="longitude">
+        <label for="longitude">Longitude *</label>
+        <input type="number" step="any" id="longitude" value="${h.longitude}" placeholder="-180 to 180" />
+        <span class="error"></span>
+      </div>
+      <div class="field full">
+        <button type="button" class="btn small secondary" id="use-location" style="align-self:flex-start">📍 Use my current location</button>
+      </div>
+      <div class="field" data-field="price">
+        <label for="price">Price per night (₹) *</label>
+        <input type="number" id="price" min="1" step="any" value="${h.price}" placeholder="e.g. 3500" />
+        <span class="error"></span>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn">${isEdit ? "Update Hotel" : "Save Hotel"}</button>
+      <a href="#/" class="btn secondary">Cancel</a>
+    </div>
+  </form>`;
+}
+
+function resizeImage(file, maxW = 800) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        const scale = Math.min(1, maxW / img.width);
+        const c = document.createElement("canvas");
+        c.width = img.width * scale; c.height = img.height * scale;
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        resolve(c.toDataURL("image/jpeg", 0.8));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function validate(v) {
+  const e = {};
+  if (!v.image) e.image = "Please upload a hotel image.";
+  if (!v.title.trim()) e.title = "Title is required.";
+  else if (v.title.trim().length < 3) e.title = "Title must be at least 3 characters.";
+  if (!v.description.trim()) e.description = "Description is required.";
+  else if (v.description.trim().length < 10) e.description = "Description must be at least 10 characters.";
+  const lat = parseFloat(v.latitude), lng = parseFloat(v.longitude), price = parseFloat(v.price);
+  if (v.latitude === "" || isNaN(lat)) e.latitude = "Latitude is required.";
+  else if (lat < -90 || lat > 90) e.latitude = "Latitude must be between -90 and 90.";
+  if (v.longitude === "" || isNaN(lng)) e.longitude = "Longitude is required.";
+  else if (lng < -180 || lng > 180) e.longitude = "Longitude must be between -180 and 180.";
+  if (v.price === "" || isNaN(price)) e.price = "Price is required.";
+  else if (price <= 0) e.price = "Price must be greater than 0.";
+  return e;
+}
+
+function showErrors(errors) {
+  document.querySelectorAll("#hotel-form .field[data-field]").forEach(f => {
+    const msg = errors[f.dataset.field];
+    f.classList.toggle("invalid", !!msg);
+    $(".error", f).textContent = msg || "";
+  });
+}
+
+function mountForm(id) {
+  const existing = id ? store.getState().hotels.find(h => h.id === id) : null;
+  if (id && !existing) return renderNotFound();
+  Helmet({
+    title: existing ? `Edit ${existing.title} | Hotel Manager` : "Add Hotel | Hotel Manager",
+    description: existing ? `Edit details of ${existing.title}.` : "Add a new hotel with image, price and location.",
+    image: ""
+  });
+  $("#app").innerHTML = HotelForm(existing);
+  let imageData = existing ? existing.image : "";
+
+  $("#image").onchange = async ev => {
+    const file = ev.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { showErrors({ image: "Only image files are allowed." }); return; }
+    try {
+      imageData = await resizeImage(file);
+      const pv = $("#preview"); pv.src = imageData; pv.style.display = "block";
+      showErrors({});
+    } catch (e) { showErrors({ image: "Could not read this image." }); }
+  };
+
+  $("#use-location").onclick = () => {
+    if (!navigator.geolocation) return alert("Geolocation is not supported by your browser.");
+    navigator.geolocation.getCurrentPosition(
+      pos => { $("#latitude").value = pos.coords.latitude.toFixed(6); $("#longitude").value = pos.coords.longitude.toFixed(6); },
+      () => alert("Unable to get your location. Please allow location access or type the coordinates.")
+    );
+  };
+
+  $("#hotel-form").onsubmit = ev => {
+    ev.preventDefault();
+    const values = {
+      image: imageData, title: $("#title").value, description: $("#description").value,
+      latitude: $("#latitude").value, longitude: $("#longitude").value, price: $("#price").value
+    };
+    const errors = validate(values);
+    showErrors(errors);
+    if (Object.keys(errors).length) { $(".invalid input, .invalid textarea")?.focus(); return; }
+    const hotel = {
+      id: existing ? existing.id : uid(), image: values.image, title: values.title.trim(),
+      description: values.description.trim(), latitude: parseFloat(values.latitude),
+      longitude: parseFloat(values.longitude), price: parseFloat(values.price)
+    };
+    store.dispatch({ type: existing ? "UPDATE_HOTEL" : "ADD_HOTEL", payload: hotel });
+    location.hash = "#/";
+    store.dispatch({ type: "SHOW_POPUP", payload: { type: "success", message: existing ? "Hotel updated successfully." : "Hotel added successfully." } });
+  };
+}
+
+/* =========================================================
+   5. LIST PAGE (search + price filter + pagination)
+   ========================================================= */
+function getFiltered() {
+  const { hotels, filters } = store.getState();
+  const q = filters.search.trim().toLowerCase();
+  const min = filters.minPrice === "" ? -Infinity : Number(filters.minPrice);
+  const max = filters.maxPrice === "" ? Infinity : Number(filters.maxPrice);
+  return hotels.filter(h => h.title.toLowerCase().includes(q) && h.price >= min && h.price <= max);
+}
+
+function updateResults() {
+  const box = $("#results");
+  if (!box) return;
+  const s = store.getState();
+  const all = getFiltered();
+  const totalPages = Math.max(1, Math.ceil(all.length / s.pageSize));
+  const page = Math.min(s.page, totalPages);
+  if (page !== s.page) { store.dispatch({ type: "SET_PAGE", page }); return; }
+  const items = all.slice((page - 1) * s.pageSize, page * s.pageSize);
+  box.innerHTML = `
+    <p class="result-info">${all.length} hotel${all.length === 1 ? "" : "s"} found</p>
+    ${items.length ? `<section class="list" aria-label="Hotel list">${items.map(HotelCard).join("")}</section>`
+                   : `<div class="empty"><h2>No hotels found</h2><p>Try changing your search or price filters.</p></div>`}
+    ${Pagination(page, totalPages)}`;
+}
+
+function mountList() {
+  Helmet({
+    title: "Hotels | Hotel Manager",
+    description: "Browse our list of hotels. Search by name and filter by price to find the perfect stay.",
+    image: ""
+  });
+  const f = store.getState().filters;
+  $("#app").innerHTML = `
+    <h1>Find Your Hotel</h1>
+    <div class="filters" role="search">
+      <div class="field search"><label for="f-search">Search by title</label>
+        <input type="text" id="f-search" placeholder="Search hotels…" value="${esc(f.search)}" /></div>
+      <div class="field"><label for="f-min">Min price (₹)</label>
+        <input type="number" id="f-min" min="0" placeholder="0" value="${esc(f.minPrice)}" /></div>
+      <div class="field"><label for="f-max">Max price (₹)</label>
+        <input type="number" id="f-max" min="0" placeholder="Any" value="${esc(f.maxPrice)}" /></div>
+      <button class="btn secondary" id="f-reset">Reset</button>
+    </div>
+    <div id="results"></div>`;
+
+  let timer;
+  const apply = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      store.dispatch({ type: "SET_FILTERS", payload: { search: $("#f-search").value, minPrice: $("#f-min").value, maxPrice: $("#f-max").value } });
+      updateResults();
+    }, 200);
+  };
+  ["#f-search", "#f-min", "#f-max"].forEach(sel => $(sel).addEventListener("input", apply));
+  $("#f-reset").onclick = () => {
+    store.dispatch({ type: "RESET_FILTERS" });
+    $("#f-search").value = ""; $("#f-min").value = ""; $("#f-max").value = "";
+    updateResults();
+  };
+
+  $("#results").onclick = ev => {
+    const del = ev.target.closest("[data-delete]");
+    if (del) {
+      const h = store.getState().hotels.find(x => x.id === del.dataset.delete);
+      store.dispatch({ type: "SHOW_POPUP", payload: { type: "confirm", id: h.id, message: `"${h.title}" will be permanently removed.` } });
+      return;
+    }
+    const pg = ev.target.closest("[data-page]");
+    if (pg && !pg.disabled) {
+      store.dispatch({ type: "SET_PAGE", page: Number(pg.dataset.page) });
+      updateResults();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+  updateResults();
+}
+
+/* =========================================================
+   6. DETAIL PAGE (map + Geolocation API)
+   ========================================================= */
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371, rad = d => d * Math.PI / 180;
+  const dLat = rad(lat2 - lat1), dLon = rad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+function mountDetail(id) {
+  const h = store.getState().hotels.find(x => x.id === id);
+  if (!h) return renderNotFound();
+  Helmet({ title: `${h.title} | Hotel Manager`, description: snippet(h.description, 150), image: h.image.startsWith("data:") ? "" : h.image });
+  const d = 0.01;
+  const mapSrc = `https://www.openstreetmap.org/export/embed.html?bbox=${h.longitude - d}%2C${h.latitude - d}%2C${h.longitude + d}%2C${h.latitude + d}&layer=mapnik&marker=${h.latitude}%2C${h.longitude}`;
+  $("#app").innerHTML = `
+    <p style="margin-bottom:12px"><a href="#/" class="btn small secondary">← Back to list</a></p>
+    <article class="detail">
+      <img class="hero" src="${h.image}" alt="${esc(h.title)} - main hotel photo" />
+      <div class="detail-body">
+        <h1>${esc(h.title)}</h1>
+        <div class="detail-price">${money(h.price)} <small style="font-weight:400;color:var(--muted)">/ night</small></div>
+        <p class="detail-desc">${esc(h.description)}</p>
+        <h2 style="font-size:1.1rem">📍 Location</h2>
+        <div class="meta-row">
+          <span>Lat: ${h.latitude}, Lng: ${h.longitude}</span>
+          <button class="btn small secondary" id="get-distance">Distance from me</button>
+          <a class="btn small secondary" target="_blank" rel="noopener" href="https://www.google.com/maps?q=${h.latitude},${h.longitude}">Open in Google Maps</a>
+          <span id="distance" aria-live="polite"></span>
+        </div>
+        <div class="map-wrap"><iframe title="Map showing location of ${esc(h.title)}" src="${mapSrc}" loading="lazy"></iframe></div>
+        <div class="detail-actions">
+          <a class="btn" href="#/edit/${h.id}">✏️ Edit</a>
+          <button class="btn danger" id="detail-delete">🗑 Delete</button>
+        </div>
+      </div>
+    </article>`;
+
+  $("#get-distance").onclick = () => {
+    const out = $("#distance");
+    if (!navigator.geolocation) { out.textContent = "Geolocation not supported."; return; }
+    out.textContent = "Locating…";
+    navigator.geolocation.getCurrentPosition(
+      p => { out.textContent = `≈ ${haversine(p.coords.latitude, p.coords.longitude, h.latitude, h.longitude).toFixed(1)} km away`; },
+      () => { out.textContent = "Location permission denied."; }
+    );
+  };
+  $("#detail-delete").onclick = () =>
+    store.dispatch({ type: "SHOW_POPUP", payload: { type: "confirm", id: h.id, message: `"${h.title}" will be permanently removed.` } });
+}
+
+function renderNotFound() {
+  Helmet({ title: "Not Found | Hotel Manager", description: "The page you requested was not found.", image: "" });
+  $("#app").innerHTML = `<div class="empty"><h2>Not found</h2><p>This page or hotel does not exist.</p><p style="margin-top:12px"><a class="btn" href="#/">Go to list</a></p></div>`;
+}
+
+/* =========================================================
+   7. HASH ROUTER (SPA)
+   ========================================================= */
+function router() {
+  const hash = location.hash.replace(/^#/, "") || "/";
+  const parts = hash.split("/").filter(Boolean);
+  window.scrollTo(0, 0);
+  if (parts.length === 0) return mountList();
+  if (parts[0] === "add") return mountForm();
+  if (parts[0] === "edit" && parts[1]) return mountForm(parts[1]);
+  if (parts[0] === "hotel" && parts[1]) return mountDetail(parts[1]);
+  renderNotFound();
+}
+window.addEventListener("hashchange", router);
+window.addEventListener("DOMContentLoaded", router);
+</script>
+</body>
+</html>
